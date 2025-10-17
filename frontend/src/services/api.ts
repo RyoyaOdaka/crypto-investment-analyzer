@@ -231,3 +231,95 @@ export const backtestApi = {
     return response.data;
   },
 };
+
+export interface VirtualPortfolio {
+  id: number;
+  name: string;
+  cash_balance: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface VirtualHolding {
+  id: number;
+  portfolio_id: number;
+  symbol: string;
+  name: string;
+  amount: number;
+  avg_purchase_price: number;
+  current_price: number;
+  current_value: number;
+  profit_loss: number;
+  profit_loss_percentage: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface VirtualTransaction {
+  id: number;
+  portfolio_id: number;
+  symbol: string;
+  name: string;
+  transaction_type: string;
+  amount: number;
+  price: number;
+  total_value: number;
+  created_at: string;
+}
+
+export interface VirtualPortfolioSummary {
+  portfolio: VirtualPortfolio;
+  holdings: VirtualHolding[];
+  total_holdings_value: number;
+  total_value: number;
+  total_profit_loss: number;
+  total_profit_loss_percentage: number;
+}
+
+export interface TradeRequest {
+  portfolio_id: number;
+  symbol: string;
+  transaction_type: string;
+  amount: number;
+}
+
+export interface TradeResponse {
+  success: boolean;
+  message: string;
+  transaction?: VirtualTransaction;
+  portfolio_summary?: VirtualPortfolioSummary;
+}
+
+export const virtualPortfolioApi = {
+  createPortfolio: async (name: string, cashBalance: number): Promise<VirtualPortfolio> => {
+    const response = await api.post<VirtualPortfolio>('/virtual-portfolio/', {
+      name,
+      cash_balance: cashBalance,
+    });
+    return response.data;
+  },
+
+  getPortfolios: async (): Promise<VirtualPortfolio[]> => {
+    const response = await api.get<VirtualPortfolio[]>('/virtual-portfolio/');
+    return response.data;
+  },
+
+  getPortfolioSummary: async (portfolioId: number): Promise<VirtualPortfolioSummary> => {
+    const response = await api.get<VirtualPortfolioSummary>(`/virtual-portfolio/${portfolioId}/summary`);
+    return response.data;
+  },
+
+  getTransactions: async (portfolioId: number, limit: number = 50): Promise<VirtualTransaction[]> => {
+    const response = await api.get<VirtualTransaction[]>(`/virtual-portfolio/${portfolioId}/transactions?limit=${limit}`);
+    return response.data;
+  },
+
+  executeTrade: async (trade: TradeRequest): Promise<TradeResponse> => {
+    const response = await api.post<TradeResponse>('/virtual-portfolio/trade', trade);
+    return response.data;
+  },
+
+  deletePortfolio: async (portfolioId: number): Promise<void> => {
+    await api.delete(`/virtual-portfolio/${portfolioId}`);
+  },
+};

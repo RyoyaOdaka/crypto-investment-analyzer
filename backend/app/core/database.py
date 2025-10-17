@@ -37,6 +37,9 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """データベースの初期化"""
+    # モデルをインポート（テーブル作成のため）
+    from app.models import portfolio, virtual_portfolio  # noqa
+
     async with engine.begin() as conn:
         # テーブルを作成
         await conn.run_sync(Base.metadata.create_all)

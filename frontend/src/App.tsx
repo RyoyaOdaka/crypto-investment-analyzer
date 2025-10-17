@@ -4,6 +4,7 @@ import { CryptoChart } from './components/CryptoChart'
 import { Portfolio } from './components/Portfolio'
 import { InvestmentAnalysis } from './components/InvestmentAnalysis'
 import { Backtest } from './components/Backtest'
+import { TradingSimulator } from './components/TradingSimulator'
 
 function App() {
   const [apiStatus, setApiStatus] = useState<string>('Checking...')
@@ -74,6 +75,11 @@ function App() {
           {/* バックテストセクション */}
           <section>
             <Backtest />
+          </section>
+
+          {/* 取引シミュレーターセクション */}
+          <section>
+            <TradingSimulator />
           </section>
         </main>
       </div>
