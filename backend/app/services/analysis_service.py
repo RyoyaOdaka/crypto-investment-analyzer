@@ -3,13 +3,134 @@ import statistics
 from app.schemas.analysis import (
     InvestmentRecommendation,
     TechnicalIndicators,
-    InvestmentAnalysisResponse
+    InvestmentAnalysisResponse,
+    MACDIndicator,
+    BollingerBands
 )
 from app.services.crypto_service import crypto_service
 
 
 class AnalysisService:
     """投資分析サービス"""
+
+    def calculate_ema(self, prices: List[float], period: int) -> List[float]:
+        """EMA（指数移動平均）を計算"""
+        if len(prices) < period:
+            return []
+
+        ema = []
+        multiplier = 2 / (period + 1)
+
+        # 最初のEMAはSMA
+        sma = sum(prices[:period]) / period
+        ema.append(sma)
+
+        # その後はEMA計算
+        for i in range(period, len(prices)):
+            ema_value = (prices[i] - ema[-1]) * multiplier + ema[-1]
+            ema.append(ema_value)
+
+        return ema
+
+    def calculate_macd(self, prices: List[float]) -> MACDIndicator:
+        """MACD（移動平均収束拡散）を計算"""
+        if len(prices) < 26:
+            return MACDIndicator(
+                macd_line=0,
+                signal_line=0,
+                histogram=0,
+                signal="neutral"
+            )
+
+        # 12日と26日のEMAを計算
+        ema_12 = self.calculate_ema(prices, 12)
+        ema_26 = self.calculate_ema(prices, 26)
+
+        if not ema_12 or not ema_26:
+            return MACDIndicator(
+                macd_line=0,
+                signal_line=0,
+                histogram=0,
+                signal="neutral"
+            )
+
+        # MACDライン = 12日EMA - 26日EMA
+        macd_line_values = [ema_12[i] - ema_26[i] for i in range(len(ema_26))]
+
+        # シグナルライン = MACDラインの9日EMA
+        signal_line_values = self.calculate_ema(macd_line_values, 9)
+
+        if not signal_line_values:
+            return MACDIndicator(
+                macd_line=macd_line_values[-1],
+                signal_line=0,
+                histogram=macd_line_values[-1],
+                signal="neutral"
+            )
+
+        macd_line = macd_line_values[-1]
+        signal_line = signal_line_values[-1]
+        histogram = macd_line - signal_line
+
+        # シグナル判定
+        if len(macd_line_values) >= 2 and len(signal_line_values) >= 2:
+            prev_histogram = macd_line_values[-2] - signal_line_values[-2]
+            if prev_histogram < 0 and histogram > 0:
+                signal = "buy"  # ゴールデンクロス
+            elif prev_histogram > 0 and histogram < 0:
+                signal = "sell"  # デッドクロス
+            else:
+                signal = "neutral"
+        else:
+            signal = "neutral"
+
+        return MACDIndicator(
+            macd_line=macd_line,
+            signal_line=signal_line,
+            histogram=histogram,
+            signal=signal
+        )
+
+    def calculate_bollinger_bands(self, prices: List[float], period: int = 20, std_dev: int = 2) -> BollingerBands:
+        """ボリンジャーバンドを計算"""
+        if len(prices) < period:
+            middle = sum(prices) / len(prices)
+            return BollingerBands(
+                upper_band=middle,
+                middle_band=middle,
+                lower_band=middle,
+                current_position="middle"
+            )
+
+        # 中央線（SMA）
+        recent_prices = prices[-period:]
+        middle_band = sum(recent_prices) / period
+
+        # 標準偏差
+        variance = sum((p - middle_band) ** 2 for p in recent_prices) / period
+        std = variance ** 0.5
+
+        # 上下バンド
+        upper_band = middle_band + (std * std_dev)
+        lower_band = middle_band - (std * std_dev)
+
+        # 現在価格の位置
+        current_price = prices[-1]
+        if current_price > upper_band:
+            position = "above_upper"
+        elif current_price > middle_band:
+            position = "upper_half"
+        elif current_price > lower_band:
+            position = "lower_half"
+        else:
+            position = "below_lower"
+
+        return BollingerBands(
+            upper_band=upper_band,
+            middle_band=middle_band,
+            lower_band=lower_band,
+            current_position=position
+        )
 
     def calculate_rsi(self, prices: List[float], period: int = 14) -> float:
         """RSI（相対力指数）を計算"""
@@ -87,7 +208,9 @@ class AnalysisService:
         trend_strength: float,
         volatility: float,
         price_change_7d: float,
-        price_change_30d: float
+        price_change_30d: float,
+        macd: MACDIndicator,
+        bollinger_bands: BollingerBands
     ) -> tuple[float, str, str]:
         """推奨スコアとアクションを計算"""
         score = 50.0  # ベーススコア
@@ -111,6 +234,27 @@ class AnalysisService:
             score += 15  # 強い上昇トレンド
         elif price_change_7d < -5 and price_change_30d < -10:
             score -= 15  # 強い下降トレンド
+
+        # MACDによるスコア調整
+        if macd.signal == "buy":  # ゴールデンクロス
+            score += 15
+        elif macd.signal == "sell":  # デッドクロス
+            score -= 15
+        # ヒストグラムの方向性
+        if macd.histogram > 0:
+            score += 5
+        elif macd.histogram < 0:
+            score -= 5
+
+        # ボリンジャーバンドによるスコア調整
+        if bollinger_bands.current_position == "below_lower":
+            score += 12  # 下限突破は買いチャンス
+        elif bollinger_bands.current_position == "above_upper":
+            score -= 12  # 上限突破は売りチャンス
+        elif bollinger_bands.current_position == "lower_half":
+            score += 3  # 下半分は買い寄り
+        elif bollinger_bands.current_position == "upper_half":
+            score -= 3  # 上半分は売り寄り
 
         # ボラティリティによるリスク調整
         if volatility < 2:
@@ -147,7 +291,9 @@ class AnalysisService:
         rsi: float,
         volatility: float,
         price_change_7d: float,
-        recommendation: str
+        recommendation: str,
+        macd: MACDIndicator,
+        bollinger_bands: BollingerBands
     ) -> str:
         """推奨理由を生成"""
         reasons = []
@@ -167,6 +313,22 @@ class AnalysisService:
             reasons.append("RSIは買われすぎ水準（調整の可能性）")
         else:
             reasons.append("RSIは適正水準")
+
+        # MACD
+        if macd.signal == "buy":
+            reasons.append("MACDゴールデンクロス発生（強い買いシグナル）")
+        elif macd.signal == "sell":
+            reasons.append("MACDデッドクロス発生（売りシグナル）")
+        elif macd.histogram > 0:
+            reasons.append("MACD上昇モメンタム")
+        elif macd.histogram < 0:
+            reasons.append("MACD下降モメンタム")
+
+        # ボリンジャーバンド
+        if bollinger_bands.current_position == "below_lower":
+            reasons.append("ボリンジャーバンド下限突破（反発期待）")
+        elif bollinger_bands.current_position == "above_upper":
+            reasons.append("ボリンジャーバンド上限突破（過熱感）")
 
         # ボラティリティ
         if volatility < 2:
@@ -200,6 +362,8 @@ class AnalysisService:
         rsi = self.calculate_rsi(prices)
         volatility = self.calculate_volatility(prices)
         trend, trend_strength = self.calculate_trend(prices)
+        macd = self.calculate_macd(prices)
+        bollinger_bands = self.calculate_bollinger_bands(prices)
 
         # 価格変動率を計算
         if len(prices) >= 7:
@@ -211,12 +375,12 @@ class AnalysisService:
 
         # 推奨スコアを計算
         score, recommendation, risk_level = self.calculate_recommendation_score(
-            rsi, trend, trend_strength, volatility, price_change_7d, price_change_30d
+            rsi, trend, trend_strength, volatility, price_change_7d, price_change_30d, macd, bollinger_bands
         )
 
         # 推奨理由を生成
         reasoning = self.generate_reasoning(
-            trend, rsi, volatility, price_change_7d, recommendation
+            trend, rsi, volatility, price_change_7d, recommendation, macd, bollinger_bands
         )
 
         # テクニカル指標
@@ -226,7 +390,9 @@ class AnalysisService:
             trend=trend,
             trend_strength=trend_strength,
             price_change_7d=price_change_7d,
-            price_change_30d=price_change_30d
+            price_change_30d=price_change_30d,
+            macd=macd,
+            bollinger_bands=bollinger_bands
         )
 
         return InvestmentRecommendation(

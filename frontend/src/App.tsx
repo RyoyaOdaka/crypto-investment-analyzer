@@ -3,6 +3,7 @@ import { TopCryptos } from './components/TopCryptos'
 import { CryptoChart } from './components/CryptoChart'
 import { Portfolio } from './components/Portfolio'
 import { InvestmentAnalysis } from './components/InvestmentAnalysis'
+import { Backtest } from './components/Backtest'
 
 function App() {
   const [apiStatus, setApiStatus] = useState<string>('Checking...')
@@ -68,6 +69,11 @@ function App() {
               💼 ポートフォリオ管理
             </h2>
             <Portfolio />
+          </section>
+
+          {/* バックテストセクション */}
+          <section>
+            <Backtest />
           </section>
         </main>
       </div>

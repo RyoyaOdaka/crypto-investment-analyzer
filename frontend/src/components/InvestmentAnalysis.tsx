@@ -159,6 +159,83 @@ export function InvestmentAnalysis() {
                 </div>
               </div>
 
+              {/* 高度なテクニカル指標 */}
+              {(rec.technical_indicators.macd || rec.technical_indicators.bollinger_bands) && (
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-gray-600 mb-2">📊 高度なテクニカル指標</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* MACD */}
+                    {rec.technical_indicators.macd && (
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-3 rounded border border-blue-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs font-semibold text-indigo-700">MACD</div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            rec.technical_indicators.macd.signal === 'buy' ? 'bg-green-500 text-white' :
+                            rec.technical_indicators.macd.signal === 'sell' ? 'bg-red-500 text-white' :
+                            'bg-gray-400 text-white'
+                          }`}>
+                            {rec.technical_indicators.macd.signal === 'buy' ? '買い' :
+                             rec.technical_indicators.macd.signal === 'sell' ? '売り' : '中立'}
+                          </span>
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">MACDライン:</span>
+                            <span className="font-bold text-gray-800">{rec.technical_indicators.macd.macd_line.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">シグナル:</span>
+                            <span className="font-bold text-gray-800">{rec.technical_indicators.macd.signal_line.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">ヒストグラム:</span>
+                            <span className={`font-bold ${
+                              rec.technical_indicators.macd.histogram >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {rec.technical_indicators.macd.histogram >= 0 ? '+' : ''}
+                              {rec.technical_indicators.macd.histogram.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ボリンジャーバンド */}
+                    {rec.technical_indicators.bollinger_bands && (
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded border border-purple-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs font-semibold text-purple-700">ボリンジャーバンド</div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            rec.technical_indicators.bollinger_bands.current_position === 'below_lower' ? 'bg-green-500 text-white' :
+                            rec.technical_indicators.bollinger_bands.current_position === 'above_upper' ? 'bg-red-500 text-white' :
+                            rec.technical_indicators.bollinger_bands.current_position === 'lower_half' ? 'bg-blue-400 text-white' :
+                            'bg-yellow-400 text-white'
+                          }`}>
+                            {rec.technical_indicators.bollinger_bands.current_position === 'below_lower' ? '下限下' :
+                             rec.technical_indicators.bollinger_bands.current_position === 'above_upper' ? '上限上' :
+                             rec.technical_indicators.bollinger_bands.current_position === 'lower_half' ? '下半分' : '上半分'}
+                          </span>
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">上限バンド:</span>
+                            <span className="font-bold text-red-600">${rec.technical_indicators.bollinger_bands.upper_band.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">中央線:</span>
+                            <span className="font-bold text-gray-800">${rec.technical_indicators.bollinger_bands.middle_band.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">下限バンド:</span>
+                            <span className="font-bold text-green-600">${rec.technical_indicators.bollinger_bands.lower_band.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* 推奨理由 */}
               <div className="bg-indigo-50 border-l-4 border-indigo-500 p-3 rounded">
                 <div className="text-xs text-indigo-700 font-semibold mb-1">💡 分析理由</div>

@@ -74,6 +74,20 @@ export interface PortfolioListResponse {
   total_profit_loss_percentage: number;
 }
 
+export interface MACDIndicator {
+  macd_line: number;
+  signal_line: number;
+  histogram: number;
+  signal: string;
+}
+
+export interface BollingerBands {
+  upper_band: number;
+  middle_band: number;
+  lower_band: number;
+  current_position: string;
+}
+
 export interface TechnicalIndicators {
   rsi: number | null;
   volatility: number;
@@ -81,6 +95,8 @@ export interface TechnicalIndicators {
   trend_strength: number;
   price_change_7d: number;
   price_change_30d: number;
+  macd: MACDIndicator | null;
+  bollinger_bands: BollingerBands | null;
 }
 
 export interface InvestmentRecommendation {
@@ -148,6 +164,70 @@ export const analysisApi = {
 
   getRecommendation: async (symbol: string): Promise<InvestmentRecommendation> => {
     const response = await api.get<InvestmentRecommendation>(`/analysis/recommend/${symbol}`);
+    return response.data;
+  },
+};
+
+export interface BacktestStrategy {
+  name: string;
+  buy_signal: string;
+  sell_signal: string;
+  initial_capital: number;
+  trade_size_percent: number;
+}
+
+export interface BacktestTrade {
+  trade_id: number;
+  type: string;
+  timestamp: string;
+  price: number;
+  amount: number;
+  value: number;
+  profit_loss?: number;
+  profit_loss_percent?: number;
+}
+
+export interface BacktestMetrics {
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+  total_return: number;
+  total_return_percent: number;
+  max_drawdown: number;
+  sharpe_ratio?: number;
+  avg_profit_per_trade: number;
+  avg_profit_per_winning_trade: number;
+  avg_loss_per_losing_trade: number;
+}
+
+export interface BacktestRequest {
+  symbol: string;
+  strategy: BacktestStrategy;
+  period_days: number;
+}
+
+export interface BacktestResponse {
+  symbol: string;
+  name: string;
+  strategy: BacktestStrategy;
+  start_date: string;
+  end_date: string;
+  initial_capital: number;
+  final_capital: number;
+  trades: BacktestTrade[];
+  metrics: BacktestMetrics;
+  equity_curve: { timestamp: number; value: number }[];
+}
+
+export const backtestApi = {
+  runBacktest: async (request: BacktestRequest): Promise<BacktestResponse> => {
+    const response = await api.post<BacktestResponse>('/backtest/run', request);
+    return response.data;
+  },
+
+  getStrategies: async () => {
+    const response = await api.get('/backtest/strategies');
     return response.data;
   },
 };

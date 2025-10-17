@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import init_db
 from app.services.redis_service import redis_service
-from app.api import crypto, portfolio, analysis
+from app.api import crypto, portfolio, analysis, backtest
 
 
 @asynccontextmanager
@@ -60,3 +60,4 @@ async def health_check():
 app.include_router(crypto.router, prefix=settings.API_V1_PREFIX)
 app.include_router(portfolio.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis.router, prefix=settings.API_V1_PREFIX)
+app.include_router(backtest.router, prefix=settings.API_V1_PREFIX)

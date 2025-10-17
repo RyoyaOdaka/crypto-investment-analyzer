@@ -2,6 +2,22 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
+class MACDIndicator(BaseModel):
+    """MACD指標"""
+    macd_line: float = Field(..., description="MACDライン")
+    signal_line: float = Field(..., description="シグナルライン")
+    histogram: float = Field(..., description="ヒストグラム")
+    signal: str = Field(..., description="シグナル (buy/sell/neutral)")
+
+
+class BollingerBands(BaseModel):
+    """ボリンジャーバンド"""
+    upper_band: float = Field(..., description="上部バンド")
+    middle_band: float = Field(..., description="中央線（移動平均）")
+    lower_band: float = Field(..., description="下部バンド")
+    current_position: str = Field(..., description="現在位置 (above_upper/upper_half/lower_half/below_lower)")
+
+
 class TechnicalIndicators(BaseModel):
     """テクニカル指標"""
     rsi: Optional[float] = Field(None, description="RSI (0-100)")
@@ -10,6 +26,8 @@ class TechnicalIndicators(BaseModel):
     trend_strength: float = Field(..., description="トレンド強度 (0-100)")
     price_change_7d: float = Field(..., description="7日間の価格変動率（%）")
     price_change_30d: float = Field(..., description="30日間の価格変動率（%）")
+    macd: Optional[MACDIndicator] = Field(None, description="MACD指標")
+    bollinger_bands: Optional[BollingerBands] = Field(None, description="ボリンジャーバンド")
 
 
 class InvestmentRecommendation(BaseModel):
